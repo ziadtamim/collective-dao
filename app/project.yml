@@ -8,6 +8,8 @@ packages:
   Rswift:
     url: https://github.com/mac-cain13/R.swift.Library.git
     from: 5.4.0
+  NounsServices:
+    path: NounsServices
 
 settings:
   base:
@@ -28,6 +30,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ca.mohammedibrahim.nouns
     dependencies:
       - package: Rswift
+      - package: NounsServices
     scheme:
       testTargets:
         - Nouns iOS Tests
