@@ -6,8 +6,16 @@
 //
 
 import SwiftUI
+import NounsServices
 
 struct ContentView: View {
+    
+    let nounsService = NounsService()
+  
+    init() {
+        nounsService.generateSVG("0x0Cfdb3Ba1694c2bb2CFACB0339ad7b1Ae5932B63", seed: [0,2,4,123,2])
+    }
+  
     var body: some View {
       Image(R.image.placeholder.name)
             .resizable()

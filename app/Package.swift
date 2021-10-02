@@ -17,6 +17,6 @@ let package = Package(
         .package(
             url: "https://github.com/mac-cain13/R.swift.git",
             from: "5.4.0"
-        ),
+        )
     ]
 )
