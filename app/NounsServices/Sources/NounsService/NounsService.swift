@@ -28,6 +28,13 @@ public class NounsService {
                     {
                       nouns {
                         id
+                        seed {
+                          background
+                          body
+                          accessory
+                          head
+                          glasses
+                        }
                         owner {
                           id
                         }
@@ -40,6 +47,7 @@ public class NounsService {
             .decode(type: Page<[Noun]>.self, decoder: JSONDecoder())
             .eraseToAnyPublisher()
     }
+     
 }
 
 private extension NounsService {
