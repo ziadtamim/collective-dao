@@ -19,6 +19,8 @@ public class NounsService {
     static let infuraKey = "2abc0ffe9968475ab1858dfdf9d0365a"
     static let contract = "0x0Cfdb3Ba1694c2bb2CFACB0339ad7b1Ae5932B63"
     
+    private let web3 = Web3(rpcURL: "https://mainnet.infura.io/v3/2abc0ffe9968475ab1858dfdf9d0365a")
+    
     public init(graphQL: GraphQL = GraphQL(), jsonDecoder: JSONDecoder = JSONDecoder()) {
         self.graphQL = graphQL
         self.jsonDecoder = jsonDecoder
@@ -56,15 +58,20 @@ public class NounsService {
     }
     
     public func generateSVG(_ nounId: String, seed: [Int]) {
-        guard let nounId = EthereumAddress(hexString: nounId) else { return }
-        let web3 = Web3(rpcURL: "https://mainnet.infura.io/v3/\(NounsService.infuraKey)")
-    
+        guard let nounId = try? EthereumAddress(hex: nounId, eip55: true) else { return }
+        print("id: \(nounId)")
         do {
-            let contract = web3.eth.Contract(type: NounsContract.self, address: nounId)
-            contract.generateSVG(seed: seed).call { results, error in
-                print("Results: \(results)")
-                print("Error: \(error)")
-                print("---")
+            let contract = web3.eth.Contract(type: NounsDescriptor.self, address: nounId)
+            let seedBigUInt: [BigUInt] = seed.map { BigUInt($0) }
+            
+            firstly {
+                contract.accessories().call()
+            }.done { count in
+                guard let value = count[""] as? Data else { return }
+                let string = value.toHexString()
+                print("String: \(string)")
+            }.catch { error in
+                print("error: \(error)")
             }
             
         } catch let error {
@@ -73,12 +80,32 @@ public class NounsService {
     }
 }
 
-class NounsContract: GenericERC721Contract {
-    func generateSVG(seed: [Int]) -> SolidityInvocation {
-        let constructor = SolidityConstantFunction(name: "generateSVGImage", inputs: [SolidityFunctionParameter(name: "seed", type: .tuple([SolidityType.int]), components: nil)], outputs: [SolidityFunctionParameter.init(name: "", type: .string, components: nil)], handler: Handler())
-        return constructor.invoke(seed)
+extension Data {
+    func hexEncodedString() -> String {
+        let format = "%02hhx"
+        return self.map { String(format: format, $0) }.joined()
     }
 }
+
+class NounsDescriptor: GenericERC721Contract {
+    func generateSVG(seed: [BigUInt]) -> SolidityInvocation {
+        let constructor = SolidityConstantFunction(name: "generateSVGImage", inputs: [SolidityFunctionParameter(name: "seed", type: .tuple([SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48))]), components: nil)], outputs: [SolidityFunctionParameter.init(name: "", type: .string, components: nil)], handler: self)
+        let values = SolidityTuple(seed.map { SolidityWrappedValue(value: $0, type: .type(.uint(bits: 48))) })
+        return constructor.invoke(values)
+    }
+    
+    func getBodyCount() -> SolidityInvocation {
+        let constructor = SolidityConstantFunction(name: "bodyCount", outputs: [SolidityFunctionParameter.init(name: "", type: .uint256, components: nil)], handler: self)
+        return constructor.invoke()
+    }
+    
+    func accessories() -> SolidityInvocation {
+        let constructor = SolidityConstantFunction(name: "accessories", inputs: [SolidityFunctionParameter(name: "", type: .uint256, components: nil)], outputs: [SolidityFunctionParameter.init(name: "", type: .bytes(length: nil), components: nil)], handler: self)
+        return constructor.invoke(BigUInt(2))
+    }
+}
+
+
 
 class Handler: SolidityFunctionHandler {
     var address: EthereumAddress?
