@@ -108,24 +108,7 @@ class NounsDescriptor: GenericERC721Contract {
     }
 }
 
-public let UInt48Type = SolidityType.type(.uint(bits: 48))
-
-//
-//struct UInt48: ABIConvertible {
-//    var uint: UInt64
-//
-//    init(uint: UInt64) {
-//        self.uint = uint
-//    }
-//
-//    init?(hexString: String) {
-//        return nil
-//    }
-//
-//    func abiEncode(dynamic: Bool) -> String? {
-//        Data(<#T##bytes: BytesRepresentable##BytesRepresentable#>)
-//    }
-//}
+public let UInt48Type = SolidityType.type(.uint(bits: 48)) // I don't think this actually does anything to convert to 48bit integers
 
 extension BigUInt {
     func as48Bit() -> SolidityWrappedValue {
