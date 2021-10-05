@@ -60,68 +60,81 @@ public class NounsService {
     public func generateSVG(_ nounId: String, seed: [Int]) {
         guard let nounId = try? EthereumAddress(hex: nounId, eip55: true) else { return }
         print("id: \(nounId)")
-        do {
-            let contract = web3.eth.Contract(type: NounsDescriptor.self, address: nounId)
-            let seedBigUInt: [BigUInt] = seed.map { BigUInt($0) }
-            
-            firstly {
-                contract.accessories().call()
-            }.done { count in
-                guard let value = count[""] as? Data else { return }
-                let string = value.toHexString()
-                print("String: \(string)")
-            }.catch { error in
-                print("error: \(error)")
-            }
-            
-        } catch let error {
-            print("Error: \(error)")
+        
+        let contract = web3.eth.Contract(type: NounsDescriptor.self, address: nounId)
+        
+        guard let function = contract.generateSVG(seed: seed.map { UInt32($0) }) else { return }
+        firstly {
+            function.call()
+        }.done { svg in
+            guard let value = svg[""] as? String else { return }
+            print("String: \(value)")
+        }.catch { error in
+            print("error: \(error)")
         }
     }
 }
 
-extension Data {
-    func hexEncodedString() -> String {
-        let format = "%02hhx"
-        return self.map { String(format: format, $0) }.joined()
-    }
-}
-
 class NounsDescriptor: GenericERC721Contract {
-    func generateSVG(seed: [BigUInt]) -> SolidityInvocation {
-        let constructor = SolidityConstantFunction(name: "generateSVGImage", inputs: [SolidityFunctionParameter(name: "seed", type: .tuple([SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48)), SolidityType.type(.uint(bits: 48))]), components: nil)], outputs: [SolidityFunctionParameter.init(name: "", type: .string, components: nil)], handler: self)
-        let values = SolidityTuple(seed.map { SolidityWrappedValue(value: $0, type: .type(.uint(bits: 48))) })
-        return constructor.invoke(values)
+    func generateSVG(seed: [UInt32]) -> SolidityInvocation? {
+        guard let type = SolidityType("tuple", subTypes: [UInt48Type, UInt48Type, UInt48Type, UInt48Type, UInt48Type]) else { return nil }
+        let constructor = SolidityConstantFunction(name: "generateSVGImage",
+                                                   inputs: [SolidityFunctionParameter(name: "seed",
+                                                                                      type: type,
+                                                                                      components: [SolidityFunctionParameter(name: "background", type: UInt48Type, components: nil),
+                                                                                                   SolidityFunctionParameter(name: "body", type: UInt48Type, components: nil),
+                                                                                                   SolidityFunctionParameter(name: "accessory", type: UInt48Type, components: nil),
+                                                                                                   SolidityFunctionParameter(name: "head", type: UInt48Type, components: nil),
+                                                                                                   SolidityFunctionParameter(name: "glasses", type: UInt48Type, components: nil)])],
+                                                   outputs: [SolidityFunctionParameter.init(name: "",
+                                                                                            type: .string,
+                                                                                            components: nil)],
+                                                   handler: self)
+        
+        let values = SolidityTuple(seed.map { SolidityWrappedValue(value: $0, type: UInt48Type) })
+        let invocation = constructor.invoke(values)
+        return invocation
     }
     
     func getBodyCount() -> SolidityInvocation {
         let constructor = SolidityConstantFunction(name: "bodyCount", outputs: [SolidityFunctionParameter.init(name: "", type: .uint256, components: nil)], handler: self)
-        return constructor.invoke()
+        let invocation = constructor.invoke()
+        return invocation
     }
     
     func accessories() -> SolidityInvocation {
         let constructor = SolidityConstantFunction(name: "accessories", inputs: [SolidityFunctionParameter(name: "", type: .uint256, components: nil)], outputs: [SolidityFunctionParameter.init(name: "", type: .bytes(length: nil), components: nil)], handler: self)
-        return constructor.invoke(BigUInt(2))
+        return constructor.invoke(2)
     }
 }
 
+public let UInt48Type = SolidityType.type(.uint(bits: 48))
 
+//
+//struct UInt48: ABIConvertible {
+//    var uint: UInt64
+//
+//    init(uint: UInt64) {
+//        self.uint = uint
+//    }
+//
+//    init?(hexString: String) {
+//        return nil
+//    }
+//
+//    func abiEncode(dynamic: Bool) -> String? {
+//        Data(<#T##bytes: BytesRepresentable##BytesRepresentable#>)
+//    }
+//}
 
-class Handler: SolidityFunctionHandler {
-    var address: EthereumAddress?
-    
-    func call(_ call: EthereumCall, outputs: [SolidityFunctionParameter], block: EthereumQuantityTag, completion: @escaping ([String : Any]?, Error?) -> Void) {
-        //
+extension BigUInt {
+    func as48Bit() -> SolidityWrappedValue {
+        return SolidityWrappedValue(value: self, type: UInt48Type)
     }
     
-    func send(_ transaction: EthereumTransaction, completion: @escaping (EthereumData?, Error?) -> Void) {
-        //
+    func wrapped() -> SolidityWrappedValue {
+        return SolidityWrappedValue(value: self, type: .uint)
     }
-    
-    func estimateGas(_ call: EthereumCall, completion: @escaping (EthereumQuantity?, Error?) -> Void) {
-        //
-    }
-    
 }
 
 private extension NounsService {
