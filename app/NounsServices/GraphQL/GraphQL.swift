@@ -7,47 +7,51 @@
 
 import Foundation
 import Combine
+import Apollo
+import ApolloWebSocket
 
-public class GraphQL {
-    
-    public struct Operation: Encodable {
-        public let url: URL
-        public let query: String
-        
-        public init(url: URL, query: String) {
-            self.url = url
-            self.query = query
+protocol GraphQL {
+  func fetch<T: GraphQLQuery>(_ query: T) -> AnyPublisher<T.Data, Error>
+  func subscription() -> AnyPublisher<Data, Error>
+}
+
+enum GraphError: Error {
+  case errors(_ errors: [GraphQLError])
+  case emptyResponse
+  case retrieveError(Error)
+}
+
+public class ApolloGraphQL: GraphQL {
+  private(set) var apollo: ApolloClient
+  
+  public init(url: URL) {
+    self.apollo = ApolloClient(url: url)
+  }
+  
+  func fetch<T>(_ query: T) -> AnyPublisher<T.Data, Error> where T: GraphQLQuery {
+    let future = Future<T.Data, Error> { promise in
+      self.apollo.fetch(query: query) { result in
+        if let errors = try? result.get().errors {
+          promise(.failure(GraphError.errors(errors)))
+          return
         }
         
-        private enum CodingKeys: String, CodingKey {
-            case query
-        }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(query, forKey: .query)
-        }
-    }
-    
-    private let networkService: Networking
-    
-    public init(networkService: Networking = URLSessionNetworkService()) {
-        self.networkService = networkService
-    }
-    
-    public func query(_ operation: Operation) -> AnyPublisher<Data, Error> {
         do {
-            let request = NetworkDataRequest(
-                url: operation.url,
-                httpMethod: .post(contentType: .json),
-                httpBody: try JSONEncoder().encode(operation)
-            )
-            return networkService.data(for: request)
-                .mapError { $0 as Error }
-                .eraseToAnyPublisher()
-            
-        } catch {
-            return Fail(error: error).eraseToAnyPublisher()
+          guard let data = try result.get().data else {
+            promise(.failure(GraphError.emptyResponse))
+            return
+          }
+          promise(.success(data))
+        } catch let error {
+          promise(.failure(GraphError.retrieveError(error)))
         }
+      }
     }
+    
+    return future.eraseToAnyPublisher()
+  }
+  
+  func subscription() -> AnyPublisher<Data, Error> {
+    return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+  }
 }

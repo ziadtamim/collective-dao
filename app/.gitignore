@@ -186,3 +186,7 @@ xcodebuild.json
 
 # Generated Assets
 *.generated.swift
+
+# GraphQL Schema
+schema.json
+

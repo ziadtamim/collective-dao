@@ -42,3 +42,4 @@ excluded:
   - .build # Where Swift Package Manager checks out dependency sources
   - Nouns/Utils/R.generated.swift
   - NounsWatch WatchKit Extension/Utils/R.generated.swift
+  - NounsServices/GraphQL/API.swift
