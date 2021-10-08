@@ -8,9 +8,6 @@ packages:
   Rswift:
     url: https://github.com/mac-cain13/R.swift.Library.git
     from: 5.4.0
-  NounsServices:
-    path: NounsServices
-
 settings:
   base:
     MARKETING_VERSION: 1
@@ -30,7 +27,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ca.mohammedibrahim.nouns
     dependencies:
       - package: Rswift
-      - package: NounsServices
+      - framework: NounsServices.framework
+        target: NounsServices_iOS
     scheme:
       testTargets:
         - Nouns iOS Tests
@@ -101,6 +99,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ca.mohammedibrahim.nouns.watchkitapp.watchextension
     dependencies:
       - package: Rswift
+      - framework: NounsServices.framework
+        target: NounsServices_watchOS
     scheme:
       testTargets:
         - Nouns Watch Tests
@@ -146,3 +146,28 @@ targets:
         TEST_TARGET_NAME: Nouns Watch
     dependencies:
       - target: Nouns Watch
+
+# NounsServices (Framework)
+  NounsServices:
+    type: framework
+    platform: [iOS, watchOS]
+    sources:
+      - path: NounsServices
+    settings:
+      base:
+        INFOPLIST_FILE:  NounsServices/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: ca.mohammedibrahim.nounsservices
+
+# NounsServices Tests (Framework)
+  NounsServices Tests:
+    type: bundle.unit-test
+    platform: [iOS, watchOS]
+    sources:
+      - path: NounsServicesTests
+    settings:
+      base:
+        INFOPLIST_FILE:  NounsServicesTests/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: ca.mohammedibrahim.nounsservices.tests
+    dependencies:
+      - target: NounsServices_${platform}
+
