@@ -13,7 +13,7 @@ final class Store {
   private let nounsService: NounsService
   private var subscriptions = Set<AnyCancellable>()
   
-  init(nounsService: NounsService = NounsService()) {
+  init(nounsService: NounsService = NounsService(graphURL: NounsService.nounsSubgraphURL!)) {
     self.nounsService = nounsService
   }
   
@@ -21,8 +21,11 @@ final class Store {
     nounsService.fetchNouns()
       .sink { completion in
         print(completion)
-      } receiveValue: { page in
-        print(page)
+      } receiveValue: { result in
+      
+        for noun in result.nouns {
+          print("Noun Seed: \(noun.seed)")
+        }
       }
       .store(in: &subscriptions)
   }

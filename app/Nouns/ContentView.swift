@@ -8,12 +8,18 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-      Image(R.image.placeholder.name)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 200, height: 200, alignment: .center)
-    }
+  let store = Store()
+  
+  init() {
+    store.fetchNouns()
+  }
+  
+  var body: some View {
+    Image(R.image.placeholder.name)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 200, height: 200, alignment: .center)
+  }
 }
 
 struct ContentView_Previews: PreviewProvider {
