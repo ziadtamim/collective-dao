@@ -8,9 +8,6 @@
 import SwiftUI
 
 struct CreateNounView: View {
-  let numberOfItems = 12
-  let cardWidth = 100
-  
   @State var carouselSelection: CarouselSelection = .head
   
   var body: some View {
