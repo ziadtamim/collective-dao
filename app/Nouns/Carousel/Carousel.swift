@@ -26,6 +26,7 @@ struct Carousel<Items: View>: View {
   
   let detector: CurrentValueSubject<CGFloat, Never>
   let publisher: AnyPublisher<CGFloat, Never>
+  let livePublisher: AnyPublisher<CGFloat, Never>
   
   @GestureState var isDetectingLongPress = false
   
@@ -53,6 +54,8 @@ struct Carousel<Items: View>: View {
         .debounce(for: .seconds(0.2), scheduler: DispatchQueue.main)
         .dropFirst()
         .eraseToAnyPublisher()
+    self.livePublisher = detector
+      .eraseToAnyPublisher()
     self.detector = detector
   }
   
@@ -72,27 +75,31 @@ struct Carousel<Items: View>: View {
     }
     
     return ScrollViewReader { reader in
-      ScrollView(.horizontal, showsIndicators: false) {
-        LazyHStack(alignment: .center, spacing: spacing) {
-          items
-        }.padding(.horizontal, (spacing + 100))
-        .background(GeometryReader { proxy in
-                        Color.clear.preference(key: ViewOffsetKey.self,
-                                               value: -proxy.frame(in: .named("scroll")).origin.x).onAppear {
-                          scrollableWidth = proxy.size.width
-                          print("width: \(scrollableWidth)")
-                        }
-                    })
-        .onPreferenceChange(ViewOffsetKey.self) { detector.send($0) }
-      }.coordinateSpace(name: "scroll")
-        .onReceive(publisher) { value in
-          let centeredPos = value + (screenWidth / 2)
-          let closest = Int(round((centeredPos - totalSpacing - (100 + spacing)) / cardWidth)) - 1 // minus 1 for index value
-          
-          withAnimation(.easeOut) {
-            reader.scrollTo(closest, anchor: .center)
+      GeometryReader { outsideProxy in
+        ScrollView(.horizontal, showsIndicators: false) {
+          LazyHStack(alignment: .center, spacing: spacing) {
+            items
+          }.padding(.horizontal, (spacing + 100))
+          .background(GeometryReader { proxy in
+                          Color.clear.preference(key: ViewOffsetKey.self,
+                                                 value: -proxy.frame(in: .named("scroll")).origin.x).onAppear {
+                            scrollableWidth = proxy.size.width
+                          }
+                      })
+          .onPreferenceChange(ViewOffsetKey.self) { detector.send($0) }
+        }.coordinateSpace(name: "scroll")
+          .onReceive(publisher) { value in
+            let centeredPos = value + (screenWidth / 2)
+            let closest = Int(round((centeredPos - totalSpacing - (100 + spacing)) / cardWidth)) - 1 // minus 1 for index value
+            
+            withAnimation(.easeOut) {
+              reader.scrollTo(closest, anchor: .center)
+            }
           }
-        }
+          .onReceive(livePublisher) { value in
+            print(value)
+          }
+      }
     }
   }
 }
