@@ -41,9 +41,10 @@ struct SnapCarousel: View {
   var selection: CarouselSelection
   
   var body: some View {
-    let spacing: CGFloat = 16
-    let widthOfHiddenCards: CGFloat = 50 /// UIScreen.main.bounds.width - 10
+    let spacing: CGFloat = (UIScreen.main.bounds.width - (200 + (2 * 100))) / 2
+    let widthOfHiddenCards: CGFloat = 100 /// UIScreen.main.bounds.width - 10
     let cardHeight: CGFloat = 550
+    let imageSize = CGSize(width: 200, height: 200)
     
     let items: [Card] = {
       return (0...20).map { Card(id: $0, name: String($0)) }
@@ -63,13 +64,15 @@ struct SnapCarousel: View {
             cardHeight: cardHeight,
             section: .top
           ) {
-            Image(R.image.glasses.name)
-              .resizable()
-              .frame(width: 200, height: 200, alignment: .center)
+            VStack {
+              Spacer()
+              Image(R.image.glasses.name)
+                .resizable()
+                .frame(width: 200, height: 200, alignment: .center)
+              Spacer()
+            }.contentShape(Rectangle())
           }
           .foregroundColor(Color.white)
-          .background(Color(uiColor: selection.color))
-          .cornerRadius(8)
           .transition(AnyTransition.slide)
           .animation(.easeOut)
         }

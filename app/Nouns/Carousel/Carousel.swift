@@ -19,6 +19,8 @@ struct Carousel<Items: View>: View {
   
   @EnvironmentObject var UIState: UIStateModel
   
+  let imageSize: CGSize = CGSize(width: 200, height: 200)
+  
   @inlinable public init(
   numberOfItems: CGFloat,
   spacing: CGFloat,
