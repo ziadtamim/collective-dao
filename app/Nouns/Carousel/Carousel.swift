@@ -49,31 +49,12 @@ struct Carousel<Items: View>: View {
       calcOffset = Float(activeOffset) + UIState.screenDrag
     }
     
-    return LazyHStack(alignment: .center, spacing: spacing) {
-      items
+    return ScrollViewReader { reader in
+      ScrollView(.horizontal, showsIndicators: false) {
+        LazyHStack(alignment: .center, spacing: spacing) {
+          items
+        }.padding(.horizontal, (spacing + 100))
+      }
     }
-    .offset(x: CGFloat(calcOffset), y: 0)
-    .gesture(DragGesture().updating($isDetectingLongPress) { currentState, gestureState, transaction in
-      self.UIState.screenDrag = Float(currentState.translation.width)
-    }.onEnded { value in
-      let endLocation = min(max(0, value.predictedEndLocation.x), totalCanvasWidth)
-      let endLocationWithoutSpacing = endLocation - totalSpacing
-      print(endLocation / cardWidth)
-      self.UIState.screenDrag = 0
-      
-      if value.translation.width < -50 {
-        guard !self.UIState.outOfBoundsRight else { return }
-        self.UIState.activeCard += 1
-        let impactMed = UIImpactFeedbackGenerator(style: .medium)
-        impactMed.impactOccurred()
-      }
-      
-      if value.translation.width > 50 {
-        guard !self.UIState.outOfBoundsLeft else { return }
-        self.UIState.activeCard -= 1
-        let impactMed = UIImpactFeedbackGenerator(style: .medium)
-        impactMed.impactOccurred()
-      }
-    })
   }
 }

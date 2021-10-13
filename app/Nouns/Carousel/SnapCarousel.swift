@@ -74,7 +74,6 @@ struct SnapCarousel: View {
           }
           .foregroundColor(Color.white)
           .transition(AnyTransition.slide)
-          .animation(.easeOut)
         }
       }
     }
