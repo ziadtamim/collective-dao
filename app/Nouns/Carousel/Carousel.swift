@@ -11,8 +11,10 @@ import SwiftUI
 struct Carousel: UIViewControllerRepresentable {
   typealias UIViewControllerType = CarouselCollectionViewController
   
+  @Binding var carouselSelection: CarouselSelection
+  
   func makeUIViewController(context: Context) -> CarouselCollectionViewController {
-    return CarouselCollectionViewController()
+    return CarouselCollectionViewController(carouselSelection: $carouselSelection)
   }
   
   func updateUIViewController(_ uiViewController: CarouselCollectionViewController, context: Context) {

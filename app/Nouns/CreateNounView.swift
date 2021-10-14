@@ -24,7 +24,7 @@ struct CreateNounView: View {
         .padding(.horizontal)
 //      SnapCarousel(selection: carouselSelection)
 //        .environmentObject(UIStateModel(numberOfItems: (0...20).count))
-      Carousel()
+      Carousel(carouselSelection: $carouselSelection)
       
       HStack(spacing: 20) {
         Image(R.image.leftArrow.name)

@@ -6,8 +6,7 @@
 //
 
 import UIKit
-
-private let reuseIdentifier = "Cell"
+import SwiftUI
 
 enum ScrollDirection {
   case left
@@ -27,6 +26,7 @@ class CarouselCollectionViewController: UICollectionViewController {
   var endedCell: IndexPath?
   
   var context: ScrollContext = .freescroll
+  @Binding var carouselSelection: CarouselSelection
   
   private var setInsets: Bool = false
   
@@ -36,9 +36,10 @@ class CarouselCollectionViewController: UICollectionViewController {
     return layout
   }()
   
-  init() {
-    super.init(collectionViewLayout: flowLayout)
+  init(carouselSelection: Binding<CarouselSelection>) {
+    self._carouselSelection = carouselSelection
     
+    super.init(collectionViewLayout: flowLayout)
     self.collectionView?.layer.borderColor = UIColor.systemBlue.cgColor
     self.collectionView?.layer.borderWidth = 2.0
     self.collectionView?.showsHorizontalScrollIndicator = false
@@ -59,25 +60,10 @@ class CarouselCollectionViewController: UICollectionViewController {
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    
-    // Uncomment the following line to preserve selection between presentations
-    // self.clearsSelectionOnViewWillAppear = false
-    
     // Register cell classes
-    self.collectionView?.register(UICollectionViewCell.self, forCellWithReuseIdentifier: reuseIdentifier)
-
-    // Do any additional setup after loading the view.
+    self.collectionView?.register(NounPartCollectionViewCell.self, forCellWithReuseIdentifier: NounPartCollectionViewCell.reuseIdentifier)
   }
   
-  /*
-   // MARK: - Navigation
-   
-   // In a storyboard-based application, you will often want to do a little preparation before navigation
-   override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-   // Get the new view controller using [segue destinationViewController].
-   // Pass the selected object to the new view controller.
-   }
-   */
   private func indexOfMajorCell() -> Int? {
     let visibleRect = CGRect(origin: collectionView.contentOffset, size: collectionView.bounds.size)
     let visiblePoint = CGPoint(x: visibleRect.midX, y: visibleRect.midY)
@@ -97,25 +83,9 @@ extension CarouselCollectionViewController {
   }
   
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath)
+    guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NounPartCollectionViewCell.reuseIdentifier, for: indexPath) as? NounPartCollectionViewCell else { return UICollectionViewCell() }
     cell.layer.borderWidth = 2.5
     cell.layer.borderColor = UIColor.red.cgColor
-    
-    cell.subviews.forEach { view in
-      view.removeFromSuperview()
-    }
-    
-    let label = UILabel()
-    label.text = String(indexPath.row)
-    label.textAlignment = .center
-    label.translatesAutoresizingMaskIntoConstraints = false
-    
-    cell.addSubview(label)
-    
-    NSLayoutConstraint.activate([
-      label.centerXAnchor.constraint(equalTo: cell.centerXAnchor),
-      label.centerYAnchor.constraint(equalTo: cell.centerYAnchor)
-    ])
     
     return cell
   }
@@ -148,7 +118,7 @@ extension CarouselCollectionViewController {
       guard let startIndex = indexOfCellBeforeDragging else { return }
       targetContentOffset.pointee = scrollView.contentOffset
       
-      let endIndex = (velocity.x > 0 ? .right : .left) == .right ? min(startIndex + 1, items - 1) : max(startIndex - 1, 0)
+      let endIndex = (velocity.x > 0 ? ScrollDirection.right : ScrollDirection.left) == ScrollDirection.right ? min(startIndex + 1, items - 1) : max(startIndex - 1, 0)
       UIView.animate(withDuration: 0.3, animations: { [weak self] in
         self?.collectionViewLayout.collectionView?.scrollToItem(at: IndexPath(item: endIndex, section: 0), at: .centeredHorizontally, animated: true)
       })
@@ -181,5 +151,38 @@ extension CarouselCollectionViewController {
     default:
       break
     }
+  }
+}
+
+class NounPartCollectionViewCell: UICollectionViewCell {
+  static let reuseIdentifier = "NounPartCell"
+
+  lazy var imageView: UIImageView = {
+    let imageView = UIImageView()
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    imageView.image = UIImage(named: R.image.glasses.name)
+    return imageView
+  }()
+  
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    setupViews()
+  }
+  
+  required init?(coder aDecoder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
+  }
+  
+  private func setupViews() {
+    print("Setup Views")
+    backgroundColor = .clear
+    addSubview(imageView)
+    
+    NSLayoutConstraint.activate([
+      imageView.centerXAnchor.constraint(equalTo: centerXAnchor),
+      imageView.centerYAnchor.constraint(equalTo: centerYAnchor),
+      imageView.heightAnchor.constraint(equalToConstant: 200),
+      imageView.widthAnchor.constraint(equalToConstant: 200)
+    ])
   }
 }
