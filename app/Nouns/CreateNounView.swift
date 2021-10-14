@@ -7,6 +7,13 @@
 
 import SwiftUI
 
+enum CarouselSelection: String {
+  case head = "Head"
+  case body = "Body"
+  case glasses = "Glasses"
+  case accessory = "Accessory"
+}
+
 struct CreateNounView: View {
   @State var carouselSelection: CarouselSelection = .head
   
@@ -15,8 +22,9 @@ struct CreateNounView: View {
       Spacer()
       CreateHeader()
         .padding(.horizontal)
-      SnapCarousel(selection: carouselSelection)
-        .environmentObject(UIStateModel(numberOfItems: (0...20).count))
+//      SnapCarousel(selection: carouselSelection)
+//        .environmentObject(UIStateModel(numberOfItems: (0...20).count))
+      Carousel()
       
       HStack(spacing: 20) {
         Image(R.image.leftArrow.name)
