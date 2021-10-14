@@ -14,6 +14,7 @@ enum CarouselSelection: String {
   case accessory = "Accessory"
 }
 
+// swiftlint:disable all
 struct CreateNounView: View {
   @State var carouselSelection: CarouselSelection = .head
   
@@ -22,16 +23,25 @@ struct CreateNounView: View {
       Spacer()
       CreateHeader()
         .padding(.horizontal)
-//      SnapCarousel(selection: carouselSelection)
-//        .environmentObject(UIStateModel(numberOfItems: (0...20).count))
-      Carousel(carouselSelection: $carouselSelection)
       
-      HStack(spacing: 20) {
-        Image(R.image.leftArrow.name)
-        Text("Swipe to pick \(carouselSelection.rawValue.lowercased())")
-          .bold()
-        Image(R.image.rightArrow.name)
-      }.padding(.bottom, 40)
+      ZStack {
+        NounView(noun: try! NounsEngine().random())
+        .drawingGroup()
+        .background(Color(uiColor: UIColor(hexString: "#FFFFFF")))
+        .frame(width: 200, height: 200, alignment: .center)
+        
+        Carousel(carouselSelection: $carouselSelection)
+        
+        VStack {
+          Spacer()
+          HStack(spacing: 20) {
+            Image(R.image.leftArrow.name)
+            Text("Swipe to pick \(carouselSelection.rawValue.lowercased())")
+              .bold()
+            Image(R.image.rightArrow.name)
+          }.padding(.bottom, 40)
+        }
+      }
       
       Picker("Noun Trait", selection: $carouselSelection) {
         Text(CarouselSelection.head.rawValue).tag(CarouselSelection.head)

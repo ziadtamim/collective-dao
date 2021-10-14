@@ -43,6 +43,7 @@ class CarouselCollectionViewController: UICollectionViewController {
     self.collectionView?.layer.borderColor = UIColor.systemBlue.cgColor
     self.collectionView?.layer.borderWidth = 2.0
     self.collectionView?.showsHorizontalScrollIndicator = false
+    self.collectionView?.backgroundColor = .clear
   }
   
   override func viewDidLayoutSubviews() {
