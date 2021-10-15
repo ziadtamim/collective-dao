@@ -1,15 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "Image8x.png",
+      "filename" : "8-bit.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "8-bit@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "8-bit@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

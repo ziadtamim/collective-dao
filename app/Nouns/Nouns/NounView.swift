@@ -24,6 +24,8 @@ struct NounView: View {
   
   let noun = try! NounsEngine().random()
   var parts: Set<PartSelection> = [.body, .accessory, .head, .glasses]
+  var showShadow: Bool = false
+  var yOffset: CGFloat = 0
   
   let lookup = [
     0, 10, 20, 30, 40, 50, 60, 70,
@@ -35,6 +37,15 @@ struct NounView: View {
   
   var body: some View {
     ZStack {
+      if showShadow {
+        VStack(alignment: .center) {
+          Spacer()
+          Image(R.image.shadow.name)
+            .offset(x: 0, y: 160)
+          Spacer()
+        }
+      }
+      
       ForEach(noun.seed.indices) { index in
         if let partSelection = PartSelection(rawValue: index), parts.contains(partSelection) {
           ForEach(noun.seed[index].shapes, id: \.id) { pathSeed in
@@ -51,11 +62,11 @@ struct NounView: View {
             .fill(Color(uiColor: UIColor(hexString: pathSeed.fillColor)))
           }
         }
-      }
+      }.frame(width: 320, height: 320, alignment: .center)
     }
     .drawingGroup()
     .background(Color.clear)
-    .frame(width: 320, height: 320, alignment: .center)
+    .offset(x: 0, y: yOffset)
   }
 }
 

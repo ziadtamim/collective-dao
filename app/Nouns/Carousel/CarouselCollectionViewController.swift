@@ -24,6 +24,9 @@ class CarouselCollectionViewController: UICollectionViewController {
   let items: Int = 20
   let itemWidth: CGFloat = 200
   
+  // TODO: - Calculate the offset on the fly based on screen size and where the collection view is positioned wrt the screen
+  static let offset: CGFloat = -70
+  
   private var indexOfCellBeforeDragging: Int? = 0
   var endedCell: IndexPath?
   
@@ -191,13 +194,6 @@ class NounPartCollectionViewCell: UICollectionViewCell {
   
   var carouselSelection: CarouselSelection = .head
   
-  lazy var imageView: UIImageView = {
-    let imageView = UIImageView()
-    imageView.translatesAutoresizingMaskIntoConstraints = false
-    imageView.image = UIImage(named: R.image.glasses.name)
-    return imageView
-  }()
-  
   var nounView = UIHostingController(rootView: NounView())
 
   override init(frame: CGRect) {
@@ -217,7 +213,7 @@ class NounPartCollectionViewCell: UICollectionViewCell {
     
     NSLayoutConstraint.activate([
       nounView.view.centerXAnchor.constraint(equalTo: centerXAnchor),
-      nounView.view.centerYAnchor.constraint(equalTo: centerYAnchor),
+      nounView.view.centerYAnchor.constraint(equalTo: centerYAnchor, constant: CarouselCollectionViewController.offset),
       nounView.view.heightAnchor.constraint(equalToConstant: 320),
       nounView.view.widthAnchor.constraint(equalToConstant: 320)
     ])

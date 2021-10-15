@@ -53,21 +53,22 @@ struct CreateNounView: View {
       ZStack {
         // Quick solution to setting z-index for different parts
         if carouselSelection == .glasses {
-          NounView(parts: carouselSelection.remainingParts())
+          NounView(parts: carouselSelection.remainingParts(), showShadow: true, yOffset: CarouselCollectionViewController.offset)
             .allowsHitTesting(false)
           Carousel(carouselSelection: $carouselSelection)
         } else if carouselSelection == .head {
-          NounView(parts: [.body, .accessory])
+          NounView(parts: [.body, .accessory], showShadow: true, yOffset: CarouselCollectionViewController.offset)
             .allowsHitTesting(false)
           Carousel(carouselSelection: $carouselSelection)
-          NounView(parts: [.glasses])
+          NounView(parts: [.glasses], yOffset: CarouselCollectionViewController.offset)
             .allowsHitTesting(false)
         } else if carouselSelection == .body {
+          NounView(parts: [], showShadow: true, yOffset: CarouselCollectionViewController.offset)
           Carousel(carouselSelection: $carouselSelection)
-          NounView(parts: [.glasses, .head, .accessory])
+          NounView(parts: [.glasses, .head, .accessory], yOffset: CarouselCollectionViewController.offset)
             .allowsHitTesting(false)
         } else if carouselSelection == .accessory {
-          NounView(parts: carouselSelection.remainingParts())
+          NounView(parts: carouselSelection.remainingParts(), showShadow: true, yOffset: CarouselCollectionViewController.offset)
             .allowsHitTesting(false)
           Carousel(carouselSelection: $carouselSelection)
         }
@@ -79,7 +80,7 @@ struct CreateNounView: View {
             Text("Swipe to pick \(carouselSelection.rawValue.lowercased())")
               .bold()
             Image(R.image.rightArrow.name)
-          }.padding(.bottom, 40)
+          }.padding(.bottom, 75)
         }
       }
       
