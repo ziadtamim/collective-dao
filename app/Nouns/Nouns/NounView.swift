@@ -6,38 +6,61 @@
 //
 
 import SwiftUI
+
 // swiftlint:disable all
+enum PartSelection: Int {
+  case body = 0
+  case accessory = 1
+  case head = 2
+  case glasses = 3
+}
+
 struct NounView: View {
-  let noun: Noun
+  // seed parts
+  // 0 = body
+  // 1 = accessory
+  // 2 = head
+  // 3 = glasses
+  
+  let noun = try! NounsEngine().random()
+  var parts: Set<PartSelection> = [.body, .accessory, .head, .glasses]
+  
+  let lookup = [
+    0, 10, 20, 30, 40, 50, 60, 70,
+    80, 90, 100, 110, 120, 130, 140, 150,
+    160, 170, 180, 190, 200, 210, 220, 230,
+    240, 250, 260, 270, 280, 290, 300, 310,
+    320
+  ]
   
   var body: some View {
     ZStack {
-      ForEach(noun.seed.first!.shapes, id: \.id) { pathSeed in
-        Path { path in
-          path.addRect(
-            CGRect(
-              x: pathSeed.rect.minX,
-              y: pathSeed.rect.minY,
-              width: pathSeed.rect.width,
-              height: pathSeed.rect.height
-            )
-          )
+      ForEach(noun.seed.indices) { index in
+        if let partSelection = PartSelection(rawValue: index), parts.contains(partSelection) {
+          ForEach(noun.seed[index].shapes, id: \.id) { pathSeed in
+            Path { path in
+              path.addRect(
+                CGRect(
+                  x: lookup[Int(pathSeed.rect.minX)],
+                  y: lookup[Int(pathSeed.rect.minY)],
+                  width: lookup[Int(pathSeed.rect.width)],
+                  height: lookup[Int(pathSeed.rect.height)]
+                )
+              )
+            }
+            .fill(Color(uiColor: UIColor(hexString: pathSeed.fillColor)))
+          }
         }
-        .fill(Color(uiColor: UIColor(hexString: pathSeed.fillColor)))
       }
     }
-    .frame(width: 32, height: 32, alignment: .center)
+    .drawingGroup()
+    .background(Color.clear)
+    .frame(width: 320, height: 320, alignment: .center)
   }
 }
 
 struct NounView_Previews: PreviewProvider {
-  let noun = try! NounsEngine().random()
-
-  init() {
-    print(noun.seed.first!)
-  }
-  
   static var previews: some View {
-    NounView(noun: try! NounsEngine().random())
+    NounView()
   }
 }

@@ -7,6 +7,7 @@
 
 import UIKit
 import SwiftUI
+import Combine
 
 enum ScrollDirection {
   case left
@@ -21,16 +22,22 @@ enum ScrollContext {
 
 class CarouselCollectionViewController: UICollectionViewController {
   let items: Int = 20
+  let itemWidth: CGFloat = 200
   
   private var indexOfCellBeforeDragging: Int? = 0
   var endedCell: IndexPath?
   
+  var lastCenteredIndex: Int = 0
+  let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+  
   var context: ScrollContext = .freescroll
   @Binding var carouselSelection: CarouselSelection
   
+  private var cancellable: AnyCancellable?
+  
   private var setInsets: Bool = false
   
-  private var flowLayout: UICollectionViewFlowLayout = {
+  var flowLayout: UICollectionViewFlowLayout = {
     let layout = UICollectionViewFlowLayout()
     layout.scrollDirection = .horizontal
     return layout
@@ -40,8 +47,6 @@ class CarouselCollectionViewController: UICollectionViewController {
     self._carouselSelection = carouselSelection
     
     super.init(collectionViewLayout: flowLayout)
-    self.collectionView?.layer.borderColor = UIColor.systemBlue.cgColor
-    self.collectionView?.layer.borderWidth = 2.0
     self.collectionView?.showsHorizontalScrollIndicator = false
     self.collectionView?.backgroundColor = .clear
   }
@@ -54,7 +59,7 @@ class CarouselCollectionViewController: UICollectionViewController {
     self.collectionView.scrollToItem(at: IndexPath(item: 0, section: 0), at: .centeredHorizontally, animated: false)
     setInsets = true
   }
-
+  
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
@@ -71,6 +76,15 @@ class CarouselCollectionViewController: UICollectionViewController {
     let visibleIndexPath = collectionView.indexPathForItem(at: visiblePoint)
     return visibleIndexPath?.item
   }
+  
+  private func isCenteredOnItem() -> Bool {
+    let inset = collectionView.contentInset.left
+    let scrollPosition = collectionView.contentOffset.x + inset
+    print(scrollPosition)
+    let itemIndex = Int(scrollPosition / itemWidth)
+    let remainder = scrollPosition - (itemWidth * CGFloat(itemIndex))
+    return (remainder / CGFloat(itemIndex)) == flowLayout.minimumLineSpacing
+  }
 }
 
 // MARK: UICollectionViewDataSource
@@ -85,9 +99,7 @@ extension CarouselCollectionViewController {
   
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NounPartCollectionViewCell.reuseIdentifier, for: indexPath) as? NounPartCollectionViewCell else { return UICollectionViewCell() }
-    cell.layer.borderWidth = 2.5
-    cell.layer.borderColor = UIColor.red.cgColor
-    
+    cell.setCarouselSelection(carouselSelection)
     return cell
   }
 }
@@ -102,9 +114,22 @@ extension CarouselCollectionViewController: UICollectionViewDelegateFlowLayout {
 // MARK: UIScrollViewDelegate
 extension CarouselCollectionViewController {
   override func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-      indexOfCellBeforeDragging = indexOfMajorCell()
+    indexOfCellBeforeDragging = indexOfMajorCell()
   }
-
+  
+  override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    guard case .freescroll = context else { return }
+    let inset = collectionView.contentInset.left
+    let scrollPosition = collectionView.contentOffset.x + inset
+    let itemIndex = Int(scrollPosition / itemWidth)
+    let remainder = scrollPosition - (itemWidth * CGFloat(itemIndex))
+    let diff = abs(remainder - (flowLayout.minimumLineSpacing * CGFloat(itemIndex)))
+    if(diff <= 10 && lastCenteredIndex != itemIndex) {
+      impactGenerator.impactOccurred(intensity: 1.0)
+      lastCenteredIndex = itemIndex
+    }
+  }
+  
   override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
     let iterateThreshold = 0.2
     let freeScrollThreshold = 1.9
@@ -122,13 +147,15 @@ extension CarouselCollectionViewController {
       let endIndex = (velocity.x > 0 ? ScrollDirection.right : ScrollDirection.left) == ScrollDirection.right ? min(startIndex + 1, items - 1) : max(startIndex - 1, 0)
       UIView.animate(withDuration: 0.3, animations: { [weak self] in
         self?.collectionViewLayout.collectionView?.scrollToItem(at: IndexPath(item: endIndex, section: 0), at: .centeredHorizontally, animated: true)
+      }, completion: { [weak self] _ in
+        self?.impactGenerator.impactOccurred()
       })
     } else {
       context = .stop
       guard let indexOfMajorCell = self.indexOfMajorCell() else { return }
-
+      
       let indexPath = IndexPath(row: indexOfMajorCell, section: 0)
-
+      
       UIView.animate(withDuration: 0.3, animations: { [weak self] in
         self?.collectionViewLayout.collectionView?.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
       })
@@ -136,28 +163,34 @@ extension CarouselCollectionViewController {
     }
   }
   
-  override func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
-  }
-  
   override func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
     switch context {
     case .freescroll, .stop:
-      guard let indexOfMajorCell = self.indexOfMajorCell() else { return }
-
-      let indexPath = IndexPath(row: indexOfMajorCell, section: 0)
-
-      UIView.animate(withDuration: 0.3, animations: { [weak self] in
-        self?.collectionViewLayout.collectionView?.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
-      })
+      self.snapToClosestCell()
     default:
-      break
+      context = .stop
     }
+  }
+  
+  func snapToClosestCell() {
+    guard let indexOfMajorCell = self.indexOfMajorCell() else { return }
+    
+    let indexPath = IndexPath(row: indexOfMajorCell, section: 0)
+    
+    UIView.animate(withDuration: 0.3, animations: { [weak self] in
+      self?.collectionViewLayout.collectionView?.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
+    }, completion: { [weak self] _ in
+      self?.impactGenerator.impactOccurred()
+      self?.context = .stop
+    })
   }
 }
 
 class NounPartCollectionViewCell: UICollectionViewCell {
   static let reuseIdentifier = "NounPartCell"
-
+  
+  var carouselSelection: CarouselSelection = .head
+  
   lazy var imageView: UIImageView = {
     let imageView = UIImageView()
     imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -165,25 +198,36 @@ class NounPartCollectionViewCell: UICollectionViewCell {
     return imageView
   }()
   
+  var nounView = UIHostingController(rootView: NounView())
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setupViews()
   }
   
+  func setCarouselSelection(_ carouselSelection: CarouselSelection) {
+    self.carouselSelection = carouselSelection
+    nounView = UIHostingController(rootView: NounView(parts: [carouselSelection.partSelection()]))
+    
+    self.subviews.forEach { $0.removeFromSuperview() }
+    
+    addSubview(nounView.view)
+    nounView.view.backgroundColor = .clear
+    nounView.view.translatesAutoresizingMaskIntoConstraints = false
+    
+    NSLayoutConstraint.activate([
+      nounView.view.centerXAnchor.constraint(equalTo: centerXAnchor),
+      nounView.view.centerYAnchor.constraint(equalTo: centerYAnchor),
+      nounView.view.heightAnchor.constraint(equalToConstant: 320),
+      nounView.view.widthAnchor.constraint(equalToConstant: 320)
+    ])
+  }
+  
   required init?(coder aDecoder: NSCoder) {
-      fatalError("init(coder:) has not been implemented")
+    fatalError("init(coder:) has not been implemented")
   }
   
   private func setupViews() {
-    print("Setup Views")
     backgroundColor = .clear
-    addSubview(imageView)
-    
-    NSLayoutConstraint.activate([
-      imageView.centerXAnchor.constraint(equalTo: centerXAnchor),
-      imageView.centerYAnchor.constraint(equalTo: centerYAnchor),
-      imageView.heightAnchor.constraint(equalToConstant: 200),
-      imageView.widthAnchor.constraint(equalToConstant: 200)
-    ])
   }
 }

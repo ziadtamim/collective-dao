@@ -12,6 +12,32 @@ enum CarouselSelection: String {
   case body = "Body"
   case glasses = "Glasses"
   case accessory = "Accessory"
+  
+  func remainingParts() -> Set<PartSelection> {
+    switch self {
+    case .head:
+      return [.body, .glasses, .accessory]
+    case .body:
+      return [.head, .glasses, .accessory]
+    case .glasses:
+      return [.body, .head, .accessory]
+    case .accessory:
+      return [.body, .head, .glasses]
+    }
+  }
+  
+  func partSelection() -> PartSelection {
+    switch self {
+    case .head:
+      return .head
+    case .body:
+      return .body
+    case .glasses:
+      return .glasses
+    case .accessory:
+      return .accessory
+    }
+  }
 }
 
 // swiftlint:disable all
@@ -25,12 +51,26 @@ struct CreateNounView: View {
         .padding(.horizontal)
       
       ZStack {
-        NounView(noun: try! NounsEngine().random())
-        .drawingGroup()
-        .background(Color(uiColor: UIColor(hexString: "#FFFFFF")))
-        .frame(width: 200, height: 200, alignment: .center)
-        
-        Carousel(carouselSelection: $carouselSelection)
+        // Quick solution to setting z-index for different parts
+        if carouselSelection == .glasses {
+          NounView(parts: carouselSelection.remainingParts())
+            .allowsHitTesting(false)
+          Carousel(carouselSelection: $carouselSelection)
+        } else if carouselSelection == .head {
+          NounView(parts: [.body, .accessory])
+            .allowsHitTesting(false)
+          Carousel(carouselSelection: $carouselSelection)
+          NounView(parts: [.glasses])
+            .allowsHitTesting(false)
+        } else if carouselSelection == .body {
+          Carousel(carouselSelection: $carouselSelection)
+          NounView(parts: [.glasses, .head, .accessory])
+            .allowsHitTesting(false)
+        } else if carouselSelection == .accessory {
+          NounView(parts: carouselSelection.remainingParts())
+            .allowsHitTesting(false)
+          Carousel(carouselSelection: $carouselSelection)
+        }
         
         VStack {
           Spacer()
