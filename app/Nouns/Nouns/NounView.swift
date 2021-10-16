@@ -22,7 +22,7 @@ struct NounView: View {
   // 2 = head
   // 3 = glasses
   
-  let noun = try! NounsEngine().random()
+  var noun = try! NounsEngine().random()
   var parts: Set<PartSelection> = [.body, .accessory, .head, .glasses]
   var showShadow: Bool = false
   var yOffset: CGFloat = 0

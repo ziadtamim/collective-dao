@@ -8,18 +8,29 @@
 import SwiftUI
 
 struct CreateHeader: View {
-    var body: some View {
-      HStack {
-        Image(R.image.close.name)
-        Spacer()
+  var didTapRandom: () -> Void = {}
+  
+  init(didTapRandom: @escaping () -> Void = {}) {
+    self.didTapRandom = didTapRandom
+  }
+  
+  var body: some View {
+    HStack {
+      Image(R.image.close.name)
+      Spacer()
+      Button {
+        didTapRandom()
+      } label: {
         Image(R.image.vector.name)
-        Image(R.image.check.name)
       }
+
+      Image(R.image.check.name)
     }
+  }
 }
 
 struct CreateHeader_Previews: PreviewProvider {
-    static var previews: some View {
-        CreateHeader()
-    }
+  static var previews: some View {
+    CreateHeader()
+  }
 }

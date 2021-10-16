@@ -45,12 +45,18 @@ class NounsGenerator {
   }
   
   func seed(withBody body: Int, accessory: Int, head: Int, glasses: Int) -> [String] {
-    [
+    guard numOfParts(for: .body) > body, numOfParts(for: .accessory) > accessory, numOfParts(for: .head) > head, numOfParts(for: .glasses) > glasses else { return [] }
+    
+    return [
       layer.parts[0][body].data,
       layer.parts[1][accessory].data,
       layer.parts[2][head].data,
       layer.parts[3][glasses].data
     ]
+  }
+  
+  func numOfParts(for selection: PartSelection) -> Int {
+    return layer.parts[selection.rawValue].count
   }
 }
 

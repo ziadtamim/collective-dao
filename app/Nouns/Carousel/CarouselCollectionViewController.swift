@@ -20,8 +20,10 @@ enum ScrollContext {
   case stop
 }
 
+// swiftlint:disable all
 class CarouselCollectionViewController: UICollectionViewController {
-  let items: Int = 20
+  var itemCount: Int = 0
+  
   let itemWidth: CGFloat = 200
   
   // TODO: - Calculate the offset on the fly based on screen size and where the collection view is positioned wrt the screen
@@ -52,6 +54,7 @@ class CarouselCollectionViewController: UICollectionViewController {
     super.init(collectionViewLayout: flowLayout)
     self.collectionView?.showsHorizontalScrollIndicator = false
     self.collectionView?.backgroundColor = .clear
+    refresh()
   }
   
   override func viewDidLayoutSubviews() {
@@ -88,6 +91,19 @@ class CarouselCollectionViewController: UICollectionViewController {
     let remainder = scrollPosition - (itemWidth * CGFloat(itemIndex))
     return (remainder / CGFloat(itemIndex)) == flowLayout.minimumLineSpacing
   }
+  
+  func refresh() {
+    do {
+      itemCount = try NounsGenerator().numOfParts(for: carouselSelection.partSelection())
+      flowLayout.minimumLineSpacing = carouselSelection == .head ?  50 : 10
+      flowLayout.minimumInteritemSpacing = carouselSelection == .head ? 50 : 10
+      collectionView.collectionViewLayout.invalidateLayout()
+      collectionView.reloadData()
+      snapToClosestCell()
+    } catch {
+      // Left intentionally blank
+    }
+  }
 }
 
 // MARK: UICollectionViewDataSource
@@ -97,12 +113,13 @@ extension CarouselCollectionViewController {
   }
   
   override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-    return items
+    print("Item count: \(itemCount)")
+    return itemCount
   }
   
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NounPartCollectionViewCell.reuseIdentifier, for: indexPath) as? NounPartCollectionViewCell else { return UICollectionViewCell() }
-    cell.setCarouselSelection(carouselSelection)
+    cell.setCarouselSelection(carouselSelection, index: indexPath.item)
     return cell
   }
 }
@@ -147,7 +164,7 @@ extension CarouselCollectionViewController {
       guard let startIndex = indexOfCellBeforeDragging else { return }
       targetContentOffset.pointee = scrollView.contentOffset
       
-      let endIndex = (velocity.x > 0 ? ScrollDirection.right : ScrollDirection.left) == ScrollDirection.right ? min(startIndex + 1, items - 1) : max(startIndex - 1, 0)
+      let endIndex = (velocity.x > 0 ? ScrollDirection.right : ScrollDirection.left) == ScrollDirection.right ? min(startIndex + 1, itemCount - 1) : max(startIndex - 1, 0)
       UIView.animate(withDuration: 0.3, animations: { [weak self] in
         self?.collectionViewLayout.collectionView?.scrollToItem(at: IndexPath(item: endIndex, section: 0), at: .centeredHorizontally, animated: true)
       }, completion: { [weak self] _ in
@@ -201,9 +218,17 @@ class NounPartCollectionViewCell: UICollectionViewCell {
     setupViews()
   }
   
-  func setCarouselSelection(_ carouselSelection: CarouselSelection) {
+  func setCarouselSelection(_ carouselSelection: CarouselSelection, index: Int) {
     self.carouselSelection = carouselSelection
-    nounView = UIHostingController(rootView: NounView(parts: [carouselSelection.partSelection()]))
+    
+    //  bgColor: Int, body: Int, accessory: Int, head: Int, glasses: Int
+    let seed = try! NounsEngine()[withBackgroundColor: 0,
+                                  carouselSelection == .body ? index : 0,
+                                  carouselSelection == .accessory ? index : 0,
+                                  carouselSelection == .head ? index : 0,
+                                  carouselSelection == .glasses ? index : 0]
+    
+    nounView = UIHostingController(rootView: NounView(noun: seed, parts: [carouselSelection.partSelection()]))
     
     self.subviews.forEach { $0.removeFromSuperview() }
     

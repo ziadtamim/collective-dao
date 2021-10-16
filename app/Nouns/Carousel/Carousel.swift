@@ -18,10 +18,6 @@ struct Carousel: UIViewControllerRepresentable {
   }
   
   func updateUIViewController(_ uiViewController: CarouselCollectionViewController, context: Context) {
-    uiViewController.flowLayout.minimumLineSpacing = carouselSelection == .head ?  50 : 10
-    uiViewController.flowLayout.minimumInteritemSpacing = carouselSelection == .head ? 50 : 10
-    uiViewController.collectionView.collectionViewLayout.invalidateLayout()
-    uiViewController.collectionView.reloadData()
-    uiViewController.snapToClosestCell()
+    uiViewController.refresh()
   }
 }
