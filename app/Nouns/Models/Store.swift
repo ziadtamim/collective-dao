@@ -13,7 +13,7 @@ final class Store {
   private let nounsService: NounsService
   private var subscriptions = Set<AnyCancellable>()
   
-  init(nounsService: NounsService = NounsService(graphURL: NounsService.nounsSubgraphURL!)) {
+  init(nounsService: NounsService = NounsService(httpURL: NounsService.nounsSubgraphURL!, websocketURL: NounsService.nounsWebsocketURL!)) {
     self.nounsService = nounsService
   }
   

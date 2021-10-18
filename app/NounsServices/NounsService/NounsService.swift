@@ -11,8 +11,9 @@ import Combine
 public class NounsService {
   private let graphQL: GraphQL
   
-  public init(graphURL: URL) {
-    self.graphQL = ApolloGraphQL(url: graphURL)
+  public init(httpURL: URL, websocketURL: URL) {
+    let graphQL = ApolloGraphQL(httpURL: httpURL, websocketURL: websocketURL)
+    self.graphQL = graphQL
   }
   
   public func fetchNouns() -> AnyPublisher<NounsListQuery.Data, Error> {
@@ -26,6 +27,14 @@ public extension NounsService {
   static let nounsSubgraphURL: URL? = {
     var urlComponents = URLComponents()
     urlComponents.scheme = "https"
+    urlComponents.host = "api.thegraph.com"
+    urlComponents.path = "/subgraphs/name/nounsdao/nouns-subgraph"
+    return urlComponents.url
+  }()
+  
+  static let nounsWebsocketURL: URL? = {
+    var urlComponents = URLComponents()
+    urlComponents.scheme = "wss"
     urlComponents.host = "api.thegraph.com"
     urlComponents.path = "/subgraphs/name/nounsdao/nouns-subgraph"
     return urlComponents.url

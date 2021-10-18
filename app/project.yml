@@ -159,6 +159,8 @@ targets:
     dependencies:
       - package: Apollo
         product: ApolloWebSocket
+      - package: Apollo
+        product: ApolloSQLite
     settings:
       base:
         INFOPLIST_FILE:  NounsServices/Info.plist
