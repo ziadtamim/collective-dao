@@ -20,6 +20,11 @@ public class NounsService {
     let query = NounsListQuery()
     return graphQL.fetch(query)
   }
+  
+  public func subscribeToAuctions() -> AnyPublisher<LatestAuctionSubscription.Data, Error> {
+    let subscription = LatestAuctionSubscription()
+    return graphQL.subscription(subscription)
+  }
 }
 
 public extension NounsService {

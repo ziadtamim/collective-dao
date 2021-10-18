@@ -12,8 +12,8 @@ import ApolloWebSocket
 import ApolloSQLite
 
 protocol GraphQL {
-  func fetch<T: GraphQLQuery>(_ query: T) -> AnyPublisher<T.Data, Error>
-  func subscription() -> AnyPublisher<Data, Error>
+  func fetch<T: GraphQLQuery>(_ subscription: T) -> AnyPublisher<T.Data, Error>
+  func subscription<T: GraphQLSubscription>(_ query: T) -> AnyPublisher<T.Data, Error>
 }
 
 enum GraphError: Error {
@@ -72,29 +72,48 @@ public class ApolloGraphQL: GraphQL {
   }
   
   func fetch<T>(_ query: T) -> AnyPublisher<T.Data, Error> where T: GraphQLQuery {
-    let future = Future<T.Data, Error> { promise in
-      self.apollo.fetch(query: query, cachePolicy: .returnCacheDataAndFetch) { result in
-        if let errors = try? result.get().errors {
-          promise(.failure(GraphError.errors(errors)))
+    let subject = PassthroughSubject<T.Data, Error>()
+    
+    self.apollo.fetch(query: query, cachePolicy: .returnCacheDataAndFetch) { result in
+      if let errors = try? result.get().errors {
+        subject.send(completion: .failure(GraphError.errors(errors)))
+        return
+      }
+      
+      do {
+        guard let data = try result.get().data else {
+          subject.send(completion: .failure(GraphError.emptyResponse))
           return
         }
-        
-        do {
-          guard let data = try result.get().data else {
-            promise(.failure(GraphError.emptyResponse))
-            return
-          }
-          promise(.success(data))
-        } catch let error {
-          promise(.failure(GraphError.retrieveError(error)))
-        }
+        subject.send(data)
+      } catch let error {
+        subject.send(completion: .failure(GraphError.retrieveError(error)))
       }
     }
     
-    return future.eraseToAnyPublisher()
+    return subject.eraseToAnyPublisher()
   }
   
-  func subscription() -> AnyPublisher<Data, Error> {
-    return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+  func subscription<T>(_ subscription: T) -> AnyPublisher<T.Data, Error> where T: GraphQLSubscription {
+    let subject = PassthroughSubject<T.Data, Error>()
+
+    self.apollo.subscribe(subscription: subscription) { result in
+      if let errors = try? result.get().errors {
+        subject.send(completion: .failure(GraphError.errors(errors)))
+        return
+      }
+      
+      do {
+        guard let data = try result.get().data else {
+          subject.send(completion: .failure(GraphError.emptyResponse))
+          return
+        }
+        subject.send(data)
+      } catch let error {
+        subject.send(completion: .failure(GraphError.retrieveError(error)))
+      }
+    }
+    
+    return subject.eraseToAnyPublisher()
   }
 }

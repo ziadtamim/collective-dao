@@ -12,6 +12,7 @@ struct ContentView: View {
   
   init() {
     store.fetchNouns()
+    store.subscribeToAuction()
   }
   
   var body: some View {
