@@ -67,11 +67,13 @@ public class ApolloGraphQL: GraphQL {
   public init(httpURL: URL, websocketURL: URL) {
     self.url = httpURL
     self.websocketURL = websocketURL
+    
+    self.apollo.cacheKeyForObject = { $0["id"] }
   }
   
   func fetch<T>(_ query: T) -> AnyPublisher<T.Data, Error> where T: GraphQLQuery {
     let future = Future<T.Data, Error> { promise in
-      self.apollo.fetch(query: query) { result in
+      self.apollo.fetch(query: query, cachePolicy: .returnCacheDataAndFetch) { result in
         if let errors = try? result.get().errors {
           promise(.failure(GraphError.errors(errors)))
           return
