@@ -20,6 +20,7 @@ final class Store {
   func fetchNouns() {
     nounsService.fetchNouns()
       .sink { completion in
+        print("Completion: \(completion)")
       } receiveValue: { result in
         for noun in result.nouns {
           print("Noun Seed: \(noun.seed)")
@@ -30,9 +31,7 @@ final class Store {
   
   func subscribeToAuction() {
     nounsService.subscribeToAuctions()
-      .sink { completion in
-        print(completion)
-      } receiveValue: { result in
+      .sink { _ in } receiveValue: { result in
         print("First auction in results: \(result.auctions.first)")
       }
       .store(in: &subscriptions)

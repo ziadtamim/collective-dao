@@ -44,20 +44,20 @@ public class ApolloGraphQL: GraphQL {
   }()
   
   /// A web socket transport to use for subscriptions
-  private lazy var webSocketTransport: WebSocketTransport = {
+  internal lazy var webSocketTransport: WebSocketTransport = {
     let request = URLRequest(url: websocketURL)
     let webSocketClient = WebSocket(request: request)
     return WebSocketTransport(websocket: webSocketClient, store: store)
   }()
   
   /// An HTTP transport to use for queries and mutations
-  private lazy var httpTransport: RequestChainNetworkTransport = {
+  internal lazy var httpTransport: RequestChainNetworkTransport = {
     return RequestChainNetworkTransport(interceptorProvider: DefaultInterceptorProvider(store: store), endpointURL: url)
   }()
   
   /// A split network transport to allow the use of both of the above
   /// transports through a single `NetworkTransport` instance.
-  private lazy var splitNetworkTransport = SplitNetworkTransport(
+  internal lazy var splitNetworkTransport = SplitNetworkTransport(
     uploadingNetworkTransport: self.httpTransport,
     webSocketNetworkTransport: self.webSocketTransport
   )
@@ -74,30 +74,42 @@ public class ApolloGraphQL: GraphQL {
   func fetch<T>(_ query: T) -> AnyPublisher<T.Data, Error> where T: GraphQLQuery {
     let subject = PassthroughSubject<T.Data, Error>()
     
-    self.apollo.fetch(query: query, cachePolicy: .returnCacheDataAndFetch) { result in
+    var cancellable: Apollo.Cancellable?
+    
+    cancellable = self.apollo.fetch(query: query, cachePolicy: .returnCacheDataAndFetch) { result in
       if let errors = try? result.get().errors {
         subject.send(completion: .failure(GraphError.errors(errors)))
         return
       }
       
       do {
-        guard let data = try result.get().data else {
+        let graphResult = try result.get()
+        guard let data = graphResult.data else {
           subject.send(completion: .failure(GraphError.emptyResponse))
           return
         }
         subject.send(data)
+        
+        if graphResult.source == .server {
+          subject.send(completion: .finished)
+        }
       } catch let error {
         subject.send(completion: .failure(GraphError.retrieveError(error)))
       }
     }
     
-    return subject.eraseToAnyPublisher()
+    return subject.handleEvents(receiveCancel: {
+      cancellable?.cancel()
+    }).upstream
+      .eraseToAnyPublisher()
   }
   
   func subscription<T>(_ subscription: T) -> AnyPublisher<T.Data, Error> where T: GraphQLSubscription {
     let subject = PassthroughSubject<T.Data, Error>()
 
-    self.apollo.subscribe(subscription: subscription) { result in
+    var cancellable: Apollo.Cancellable?
+    
+    cancellable = self.apollo.subscribe(subscription: subscription) { result in
       if let errors = try? result.get().errors {
         subject.send(completion: .failure(GraphError.errors(errors)))
         return
@@ -114,6 +126,9 @@ public class ApolloGraphQL: GraphQL {
       }
     }
     
-    return subject.eraseToAnyPublisher()
+    return subject.handleEvents(receiveCancel: {
+      cancellable?.cancel()
+    }).upstream
+      .eraseToAnyPublisher()
   }
 }
