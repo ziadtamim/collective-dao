@@ -9,10 +9,10 @@ import SwiftUI
 
 @main
 struct NounsApp: App {
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+  
+  var body: some Scene {
+    WindowGroup {
+      CreateNounView()
     }
+  }
 }
